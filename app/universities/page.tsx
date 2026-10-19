@@ -1,28 +1,21 @@
 import { Suspense } from "react";
-import type { UniversityListResponse } from "@/lib/types";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import FilterForm from "@/components/FilterForm";
+import StatusBadge from "@/components/StatusBadge";
+import { apiGet } from "@/lib/api";
 import { buildApiQuery, type SearchParams } from "@/lib/filters";
+import type { UniversityListResponse } from "@/lib/types";
+
 
 async function UniversityList({
     searchParams
 }: {
     searchParams: Promise<SearchParams>;
 }) {
-    const params = await searchParams;
-    const query = buildApiQuery(params);
-    const token = (await cookies()).get("access_token")?.value;
-    if (!token) redirect("/login");
-
-    const url = `${process.env.API_URL}/users/universities/${query ? `?${query}` : ""}`;
-    const res = await fetch(url, {
-        headers: {Authorization: `Bearer ${token}`},
-    });
-    if (res.status === 401) redirect("/login");
-    if (!res.ok) throw new Error("Failed to load universities");
-
-    const json: UniversityListResponse = await res.json();
+    const query = buildApiQuery(await searchParams);
+    const json = await apiGet<UniversityListResponse>(
+        `/users/universities/${query ? `?${query}` : ""}`
+    );
 
     if (json.data.length === 0) {
         return <p className="text-gray-500">No programs match your filters.</p>;
@@ -35,26 +28,26 @@ async function UniversityList({
             </p>
             <ul className="grid gap-4 sm:grid-cols-2">
                 {json.data.map((item) => (
-                    <li key={item.id} className="rounded-lg border p-4">
-                        <h2 className="text-lg font-semibold">{item.name}</h2>
-                        <p className="text-gray-600">{item.program_name}</p>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {item.city}, {item.country}
-                        </p>
-                        <span className={`mt-3 inline-block rounded px-2 py-1 text-xs font-medium 
-                            ${item.status === "OPEN"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                    <li key={item.id}>
+                        <Link
+                            href={`/universities/${item.id}`}
+                            className="block rouned-lg border p-4 transition hover:border-blue-500"
                             >
-                            {item.status}
-                        </span>
+                            <h2 className="text-lg font-semibold">{item.name}</h2>
+                            <p className="text-gray-600">{item.program_name}</p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {item.city}, {item.country}
+                            </p>
+                            <div className="mt-3">
+                                <StatusBadge status={item.status}/>
+                            </div>   
+                        </Link>
                     </li>
                 ))}
             </ul>
         </>
 
-    )
+    );
 }
 
 export default function UniversitiesPage({

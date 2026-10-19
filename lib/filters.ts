@@ -61,3 +61,6 @@ export const ORDERING_OPTIONS: Option[] = [
   { value: "-gpa", label: "Required GPA (high to low)" },
 ];
 
+export function labelFor(options: Option[], value: string): string {
+  return options.find((o) => o.value === value)?.label ?? value;
+}
