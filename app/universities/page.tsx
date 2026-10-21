@@ -3,28 +3,32 @@ import Link from "next/link";
 import FilterForm from "@/components/FilterForm";
 import StatusBadge from "@/components/StatusBadge";
 import { apiGet } from "@/lib/api";
-import { buildApiQuery, type SearchParams } from "@/lib/filters";
+import { buildApiQuery, type SearchParams, getPage } from "@/lib/filters";
 import type { UniversityListResponse } from "@/lib/types";
-
+import Pagination from "@/components/Pagination";
 
 async function UniversityList({
     searchParams
 }: {
     searchParams: Promise<SearchParams>;
 }) {
-    const query = buildApiQuery(await searchParams);
+    const params = await searchParams;
+    const page = getPage(params);
+    const query = buildApiQuery(params, page);
     const json = await apiGet<UniversityListResponse>(
         `/users/universities/${query ? `?${query}` : ""}`
     );
 
+    const { current_page, per_page, total_docs, total_pages } = json.pagination;
     if (json.data.length === 0) {
         return <p className="text-gray-500">No programs match your filters.</p>;
     }
-
+    const first = (current_page - 1) * per_page + 1;
+    const last = first + json.data.length - 1;
     return (
         <>
             <p className="mb-4 text-sm text-gray-500">
-                {json.pagination.total_docs} programs found
+                Showing {first}–{last} of {total_docs} programs
             </p>
             <ul className="grid gap-4 sm:grid-cols-2">
                 {json.data.map((item) => (
@@ -45,6 +49,11 @@ async function UniversityList({
                     </li>
                 ))}
             </ul>
+            <Pagination 
+            params={params}
+            currentPage={current_page}
+            totalPages={total_pages}
+            />
         </>
 
     );

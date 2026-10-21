@@ -9,7 +9,7 @@ export const FILTER_KEYS = [
 ] as const;
 
 
-export function buildApiQuery(params: SearchParams): string {
+export function buildApiQuery(params: SearchParams, page = 1): string {
     const query = new URLSearchParams();
     for (const key of FILTER_KEYS) {
         const value = params[key];
@@ -17,8 +17,21 @@ export function buildApiQuery(params: SearchParams): string {
             query.set(key, value.trim());
         }
     }
+    if (page > 1) query.set("page", String(page));
     return query.toString();
 }
+
+export function getPage(params: SearchParams): number {
+  const raw = params.page;
+  const page = typeof raw == "string" ? Number.parseInt(raw, 10) : 1;
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
+
+export function buildPageHref(params: SearchParams, page:number): string {
+  const query = buildApiQuery(params, page);
+  return query ? `/universities${query}` : "/universities";
+}
+
 
 export const DEGREE_OPTIONS: Option[] = [
     { value: "BACHELOR", label: "Bachelor"},
